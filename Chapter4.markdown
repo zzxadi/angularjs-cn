@@ -79,3 +79,68 @@ Figure 4-1. Guthub: A simple recipe management application
 	}
 
 下面我们将会看到如何基于这个简单的模型构建更复杂的UI特性.
+
+##控制器, 指令和服务
+
+现在我们终于可以得到这个让我们牙齿都咬到肉里面去的美食应用程序了. 首先, 我们来看看代码中的指令和服务, 以及讨论以下它们都是做什么的, 然后我们我们会看看这个应用程序需要的多个控制器.
+
+###服务
+
+	//this file is app/scripts/services/services.js
+
+	var services = angular.module('guthub.services', ['ngResource']);
+
+	services.factory('Recipe', ['$resource', function(){
+		return $resource('/recipes/:id', {id: '@id'});
+	}]);
+
+	services.factory('MultiRecipeLoader', ['Recipe', '$q', function(Recipe, q){
+		return function(){
+			var delay = $.defer();
+			Recipe.query(function(recipes){
+				delay.resolve(recipes);
+			}, function(){
+				delay.reject('Unable to fetch recipes');
+			});
+			return delay.promise;
+		};
+	}]);
+
+	services.factory('RecipeLoader', ['Recipe', '$route', '$q', function(Recipe, $route, $q){
+		return function(){
+			var delay = $q.defer();
+			Recipe.get({id: $route.current.params.recipeId}, function(recipe){
+				delay.resolve(recipe);
+			}, function(){
+				delay.reject('Unable to fetch recipe' + $route.current.params.recipeId);
+			});
+			return delay.promise;
+		};
+	}]);
+
+首先让我们来看看我们的服务. 在33页的"使用模块组织依赖"小节中已经涉及到了服务相关的知识. 这里, 我们将会更深一点挖掘服务相关的信息.
+
+在这个文件中, 我们实例化了三个AngularJS服务.
+
+有一个菜谱服务, 它返回我们所调用的Angular Resource. 这些是RESETful资源, 它指向一个RESTful服务器. Angular Resource封装了低层的`$http`服务, 因此你可以在你的代码中只处理对象.
+
+注意单独的那行代码 - `return $resource` - (当然, 依赖于`guthub.services`模型), 现在我们可以将`recipe`作为参数传递给任意的控制器中, 它将会注入到控制器中. 此外, 每个菜谱对象都内置的有以下几个方法:
+
++ Recipe.get()
++ Recipe.save()
++ Recipe.query()
++ Recipe.remove()
++ Recipe.delete()
+
+> 如果你使用了`Recipe.delete`方法, 并且希望你的应用程序工作在IE中, 你应该像这样调用它: `Recipe[delete]()`. 这是因为在IE中`delete`是一个关键字.
+
+对于上面的方法, 所有的查询众多都在一个单独的菜谱中进行; 默认情况下`query()`返回一个菜谱数组.
+
+`return $resource`这行代码用于声明资源 - 也给了我们一些好东西:
+
+1. 注意: URL中的id是指定的RESTFul资源. 它基本上是说, 当你进行任何查询时(`Recipe.get()`), 如果你给它传递一个id字段, 那么这个字段的值将被添加早URL的尾部.
+
+也就是说, 调用`Recipe.get{id: 15})将会请求/recipe/15.
+
+2. 那第二个对象是什么呢? {id: @id}吗? 是的, 正如他们所说的, 一行代码可能需要一千行解释, 那么让我们举一个简单的例子:
+

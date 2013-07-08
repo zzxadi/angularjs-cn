@@ -142,5 +142,72 @@ Figure 4-1. Guthub: A simple recipe management application
 
 也就是说, 调用`Recipe.get{id: 15})将会请求/recipe/15.
 
-2. 那第二个对象是什么呢? {id: @id}吗? 是的, 正如他们所说的, 一行代码可能需要一千行解释, 那么让我们举一个简单的例子:
+2. 那第二个对象是什么呢? {id: @id}吗? 是的, 正如他们所说的, 一行代码可能需要一千行解释, 那么让我们举一个简单的例子.
 
+比方说我们有一个recipe对象, 其中存储了必要的信息, 并且包含一个id.
+
+然后, 我们只需要像下面这样做就可以保存它:
+
+	//Assuming existingRecipeObj has all the necessary fields,
+	//including id(say 13)
+	var recipe = new Recipe(existingRecipeObj);
+	recipe.$save();
+
+这将会触发一个POST请求到`/recipe/13`.
+
+`@id`用于告诉它, 这里的id字段取自它的对象中同时用于作为id参数. 这是一个附加的便利操作, 可以节省几行代码.
+
+在`apps/scripts/services/services.js`中有两个其他的服务. 它们两个都是加载器(Loaders); 一个用于加载单独的食谱(RecipeLoader), 另一个用于加载所有的食谱(MultiRecipeLoader). 这在我们连接到我们的路由时使用. 在核心上, 它们两个表现得非常相似. 这两个服务如下:
+
+1. 创建一个`$q`延迟(deferred)对象(它们是AngularJS的promises, 用于链接异步函数).
+2. 创建一个服务器调用.
+3. 在服务器返回值时resolve延迟对象.
+4. 通过使用AngularJS的路由机制返回promise.
+
+> **AngularJS中的Promises**
+>
+> 一个promise就是一个在未来某个时刻处理返回对象或者填充它的接口(基本上都是异步行为). 从核心上讲, 一个promise就是一个带有`then()`函数(方法)的对象.
+>
+>让我们使用一个例子来展示它的优势, 假设我们需要获取一个用户的当前配置:
+
+	var currentProfile = null;
+	var username = 'something';
+
+	fetchServerConfig(function(){
+		fetchUserProfiles(serverConfig.USER_PROFILES, username, 
+			function(profiles){
+				currentProfile = profiles.currentProfile;	
+		});	
+	});
+
+> 对于这种做法这里有一些问题:
+>
+> 1. 对于最后产生的代码, 缩进是一个噩梦, 特别是如果你要链接多个调用时.
+> 
+> 2. 在回调和函数之间错误报告的功能有丢失的倾向, 除非你在每一步中处理它们.
+>
+> 3. 对于你想使用`currentProfile`做什么, 你必须在内层回调中封装其逻辑, 无论是直接的方式还是使用一个单独分离的函数.
+>
+> Promises解决了这些问题. 在我们进入它是如何解决这些问题之前, 先让我们来看看一个使用promise对同一问题的实现.
+
+	var currentProfile = fetchServerConfig().then(function(serverConfig){
+		return fetchUserProfiles(serverConfig.USER_PROFILES, username);
+	}).then(function{
+		return profiles.currentProfile;
+	}, function(error){
+		// Handle errors in either fetchServerConfig or
+		// fetchUserProfile here
+	});
+
+> 注意其优势:
+>
+> 1. 你可以链接函数调用, 因此你不会产生缩进带来的噩梦.
+>
+> 2. 你可以放心前一个函数调用会在下一个函数调用之前完成.
+>
+> 3. 每一个`then()`调用都要两个参数(这两个参数都是函数). 第一个参数是成功的操作的回调函数, 第二个参数是错误处理的函数.
+> 4. 在链接中发生错误的情况下, 错误信息会通过错误处理器传播到应用程序的其他部分. 因此, 任何回调函数的错误都可以在尾部被处理.
+>
+> 你会问, 那什么是`resolve`和`reject`呢? 是的, `deferred`在AngularJS中是一种创建promises的方式. 调用`resolve`来满足promise(调用成功时的处理函数), 同时调用`reject`来处理promise在调用错误处理器时的事情.
+
+当我们链接到路由时, 我们会再次回到这里.

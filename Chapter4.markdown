@@ -211,3 +211,47 @@ Figure 4-1. Guthub: A simple recipe management application
 > 你会问, 那什么是`resolve`和`reject`呢? 是的, `deferred`在AngularJS中是一种创建promises的方式. 调用`resolve`来满足promise(调用成功时的处理函数), 同时调用`reject`来处理promise在调用错误处理器时的事情.
 
 当我们链接到路由时, 我们会再次回到这里.
+
+###指令
+
+我们现在可以转移到即将用在我们应用程序的指令上来. 在这个应用程序中将有两个指令:
+
+`butterbar`
+
+这个指令将在路由发生改变并且页面仍然还在加载信息时处理显示和隐藏任务. 它将连接路由变化机制, 基于页面的状态来自动控制显示或者隐藏是否使用哪个标签.
+
+`focus`
+
+这个`focus`指令用于确保指定的文本域(或者元素)拥有焦点.
+
+让我们来看一下代码:
+
+	// This file is app/scripts/directives/directives.js
+
+	var directive = angular.module('guthub.directives', []);
+
+	directives.directive('butterbar', ['$rootScope', function($rootScope){
+		return {
+			link: function(scope, element attrs){
+				element.addClass('hide');
+
+				$rootScope.$on('$routeChangeStart', function(){
+					element.removeClass('hide');
+				});
+
+				$routeScope.$on('$routeChangeSuccess', function(){
+					element.addClass('hide');
+				});
+			}
+		};
+	}]);
+
+	directives.dirctive('focus',function(){
+		return {
+			link: function(scope, element, attrs){
+				element[0].focus();
+			}
+		};
+	});
+
+上面所述的指令返回一个对象带有一个单一的属性, link. 我们将在第六章深入讨论你可以如何创建你自己的指令, 但是现在, 你应该直到下面的所有事情:

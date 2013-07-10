@@ -277,3 +277,46 @@ Figure 4-1. Guthub: A simple recipe management application
 	<input type="text" focus></input>
 
 当页面加载时, 元素将立即获得焦点.
+
+###控制器
+
+随着指令和服务的覆盖, 我们终于可以进入控制器部分了, 我们有五个控制器. 所有的这些控制器都在一个单独的文件中(`app/scripts/controllers/controllers.js`), 但是我们会一个个来了解它们. 让我们来看第一个控制器, 这是一个列表控制器, 负责显示系统中所有的食谱列表.
+
+	app.controller('ListCtrl', ['scope', 'recipes', function($scope, recipes){
+		$scope.recipes = recipes;
+	}]);
+
+注意列表控制器中最重要的一个事情: 在这个控制器中, 它并没有连接到服务器和获取是食谱. 相反, 它只是使用已经取得的食谱列表. 你可能不知道它是如何工作的. 你可能会使用路由一节来回答, 因为它有一个我们之前看到`MultiRecipeLoader`. 你只需要在脑海里记住它.
+
+在我们提到的列表控制器下, 其他的控制器都与之非常相似, 但我们仍然会逐步指出它们有趣的地方:
+
+	app.controller('ViewCtrl', ['$scope', '$location', 'recipe', function($scope, $location, recipe){
+			$scope.recipe = recipe;
+
+			$scope.edit = function(){
+				$location.path('/edit/' + recipe.id);
+			};
+	}]);
+
+这个视图控制器中有趣的部分是其编辑函数公开在作用域中. 而不是显示和隐藏字段或者其他类似的东西, 这个控制器依赖于AngularJS来处理繁重的任务(你应该这么做)! 这个编辑函数简单的改变URL并跳转到编辑食谱的部分, 你可以看见, AngularJS并没有处理剩下的工作. AngularJS识别已经改变的URL并加载响应的视图(这是与我们编辑模式中相同的食谱部分). 来看一看!
+
+接下来, 让我们来看看编辑控制器:
+
+	app.controller('EditCtrl', ['$scope', '$location', 'recipe', function($scope, $location, recipe){
+		$scope.recipe = recipe;
+
+		$scope.save = function(){
+			$scope.recipe.$save(function(recipe){
+				$location.path('/view/' + recipe.id);
+			});
+		};
+
+		$scope.remove = function(){
+			delete $scope.recipe;
+			$location.path('/');
+		};
+	}]);
+
+那么在这个暴露在作用域中的编辑控制器中新的`save`和`remove`方法有什么.
+
+那么你希望作用域内的`save`函数做什么. 它保存当前食谱, 并且一旦保存好, 它就在屏幕中将用户重定向到相同的食谱. 回调函数是非常有用的, 一旦你完成任务的情况下执行或者处理一些行为.

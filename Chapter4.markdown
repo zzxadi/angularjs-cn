@@ -320,3 +320,101 @@ Figure 4-1. Guthub: A simple recipe management application
 那么在这个暴露在作用域中的编辑控制器中新的`save`和`remove`方法有什么.
 
 那么你希望作用域内的`save`函数做什么. 它保存当前食谱, 并且一旦保存好, 它就在屏幕中将用户重定向到相同的食谱. 回调函数是非常有用的, 一旦你完成任务的情况下执行或者处理一些行为.
+
+有两种方式可以在这里保存食谱. 一种是如代码所示, 通过执行$scope.recipe.$save()方法. 这只是可能, 因为`recipe`十一个通过开头部分的RecipeLoader返回的资源对象.
+
+另外, 你可以像这样来保存食谱:
+
+	Recipe.save(recipe);
+
+`remove`函数也是很简单的, 在这里它会从作用域中移除食谱, 同时将用户重定向到主菜单页. 请注意, 它并没有真正的从我们的服务器上删除它, 尽管它很再做出额外的调用.
+
+接下来, 我们来看看New控制器:
+
+	app.controller('NewCtrl', ['$scope', '$location', 'Recipe', function($scope, $location, Recipe){
+		$scope.recipe = new Recipe({
+			ingredents: [{}]
+		});
+
+		$scope.save = function(){
+			$scope.recipe.$save(function(recipe){
+				$location.path('/view/' + recipe.id);
+			});
+		};
+	}]);
+
+New控制器几乎与Edit控制器完全一样. 实际上, 你可以结合两个控制器作为一个单一的控制器来做一个练习. 唯一的主要不同是New控制器会在第一步创建一个新的食谱(这也是一个资源, 因此它也有一个`save`函数).其他的一切都保持不变.
+
+最后, 我们还有一个Ingredients控制器. 这是一个特殊的控制器, 在我们深入了解它为什么或者如何特殊之前, 先来看一看它:
+
+	app.controller('Ingredients', ['$scope', function($scope){
+		$scope.addIngredients = function(){
+			var ingredients = $scope.recipe.ingredients;
+			ingredients[ingredients.length] = {};
+		};
+
+		$scope.removeIngredient = function(index) {
+			$scope.recipe.ingredients.splice(index, 1);
+		};
+	}]);
+
+到目前为止, 我们看到的所有其他控制器斗鱼UI视图上的相关部分联系着. 但是这个Ingredients控制器是特殊的. 它是一个子控制器, 用于在编辑页面封装特定的恭喜而不需要在外层(父级)来处理. 有趣的是要注意, 由于它是一个字控制器, 继承自作用域中的父控制器(在这里就是Edit/New控制器). 因此, 它可以访问来自父控制器的`$scope.recipe`.
+
+这个控制器本身并没有什么有趣或者独特的地方. 它只是添加一个新的成份到现有的食谱成份数组中, 或者从食谱的成份列表中删除一个特定的成份.
+
+那么现在, 我们就来完成最后的控制器. 唯一的JavaScript代码块展示了如何设置路由:
+
+	// This file is app/scripts/controllers/controllers.js
+
+	var app = angular.module('guthub', ['guthub.directives', 'guthub.services']);
+
+	app.config(['$routeProvider', function($routeProvider){
+		$routeProvider.
+			when('/', {
+				controller: 'ListCtrl',
+				resolve: {
+					recipes: function(MultiRecipeLoader) {
+						return MultiRecipeLoader();
+					}
+				},
+				templateUrl: '/views/list.html'
+			}).when('/edit/:recipeId', {
+				controller: 'EditCtrl',
+				resolve: {
+					recipe: function(RecipeLoader){
+						return RecipeLoader();
+					}
+				},
+				templateUrl: '/views/recipeForm.html'
+			}).when('/view/:recipeId', {
+				controller: 'ViewCtrl',
+				resolve: {
+					recipe: function(RecipeLoader){
+						return RecipeLoader();
+					}
+				},
+				templateUrl: '/views/viewRecipe.html'
+			}).when('/new', {
+					controller: 'NewCtrl',
+					templateUrl: '/views/recipeForm.html'
+			}).otherwise({redirectTo: '/'});
+	}]);
+
+正如我们所承诺的, 我们终于到了解析函数使用的地方. 前面的代码设置Guthub AngularJS模块, 路由以及参与应用程序的模板.
+
+它挂接到我们已经创建的指令和服务上, 然后指定不同的路由指向应用程序的不同地方.
+
+对于每个路由, 我们指定了URL, 它备份控制器, 加载模板, 以及最后(可选的)提供了一个`resolve`对象.
+
+这个`resolve`对象会告诉AngularJS, 每个resolve键需要在确定路由正确时才能显示给用户. 对我们来说, 我们想要加载所有的食谱或者个别的配方, 并确保在显示页面之前服务器要响应我们. 因此, 我们要告诉路由提供者我们的食谱, 然后再告诉他如何来取得它.
+
+这个环节中我们在第一节中定义了两个服务, 分别时`MultiRecipeLoader`和`RecipeLoader`. 如果`resolve`函数返回一个AngularJS promise, 然后AngularJS会智能在获得它之前等待promise解决问题. 这意味着它将会等待到服务器响应.
+
+然后将返回结果传递到构造函数中作为参数(与来自对象字段的参数的名称一起作为参数).
+
+最后, `otherwise`函数表示当没有路由匹配时重定向到默认URL.
+
+> 你可能会注意到Edit和New控制器两个路由通向同一个模板URL, `views/recipeForm.html`. 这里发生了什么呢? 我们复用了编辑模板. 依赖于相关的控制器, 将不同的元素显示在编辑食谱模板中.
+
+完成这些工作之后, 现在我们可以聚焦到模板部分, 来看看控制器如何挂接到它们之上, 以及如何管理现实给最终用户的内容.
+

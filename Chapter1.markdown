@@ -163,7 +163,7 @@ Angular带有许多指定, 以帮助你定义应用程序的视图. 很快我们
             <input ng-model="item.quantity" />
             <span>{{item.price | currency}}</span>
             <span>{{item.price * item.quantity | currency}}</span>
-            <button onclick="remove($index)">Remove</button>
+            <button ng-click="remove($index)">Remove</button>
         </div>
         <script src="angular.js"></script>
         <script>
@@ -175,7 +175,7 @@ Angular带有许多指定, 以帮助你定义应用程序的视图. 很快我们
             ];
             
             $scope.remove = function(index){
-                $scope.item.splice(index, 1);
+                $scope.items.splice(index, 1);
             }
         }
         </script>

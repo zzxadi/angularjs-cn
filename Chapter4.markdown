@@ -418,3 +418,168 @@ New控制器几乎与Edit控制器完全一样. 实际上, 你可以结合两个
 
 完成这些工作之后, 现在我们可以聚焦到模板部分, 来看看控制器如何挂接到它们之上, 以及如何管理现实给最终用户的内容.
 
+##模板
+
+让我们首先来看看最外层的主模板, 这里就是`index.html`. 这是我们单页应用程序的基础, 同时所有其他的视图也会装在到这个模板的上下文中:
+
+	<!DOCTYPE html>
+	<html lang="en" ng-app="guthub">
+	<head>
+		<title>Guthub - Create and Share</title>
+		<script src="scripts/vendor/angular.min.js"></script>
+		<script src="scripts/vendor/angular-resource.min.js"></script>
+		<script src="scripts/directives/directives.js"></script>
+		<script src="scripts/services/services.js"></script>
+		<script src="scripts/controlers/controllers.js"></script>
+		<link rel="stylesheet" href="styles/bootstrap.css">
+		<link rel="stylesheet" href="styles/guthub.css">
+	</head>
+	<body>
+		<header>
+			<h1>Guthub</h1>
+		</header>
+		<div butterbar>Loading...</div>
+
+		<div class="container-fluid">
+			<div class="row-fluid">
+				<div class="span2">
+					<!-- Sidebar -->
+					<div class="focus"><a href="/#/new">New Recipe</a></div>
+					<div><a href="/#/">Recipe List</a></div>
+				</div>
+				<div class="span10">
+					<div ng-view></div>
+				</div>
+			</div>
+		</div>
+	</body>
+	</html>
+
+注意前面的模板中有5个有趣的元素, 其中大部分你在第2章中都已经见过了. 让我们逐个来看看它们:
+
+`ng-app`
+
+我们设置了`ng-app`模块为Guthub. 这与我们在`angular.module`函数中提供的模块名称相同. 这便是AngularJS如何知道两个挂接在一起的原因.
+
+`script`标签
+
+这表示应用程序在哪里加载AngularJS. 这必须在所有使用AngularJS的JS文件被加载之前完成. 理想的情况下, 它应该在body的底部完成(\</body\>之前).
+
+`Butterbar`
+
+我们第一次使用自定义指令. 在我们定义我们的`butterbar`指令之前, 我们希望将它用于一个元素, 以便在路由改变时显示它, 在成功的时候隐藏它(loading...处理). 需要突出显示这个元素的文本(在这里我们使用了一个非常烦人的"Loading...").
+
+链接的`href`值
+
+`href`用于链接到我们单页应用程序的各个页面. 追它们如何使用#字符来确保页面不会重载的, 并且相对于当前页面. AngularJS会监控URL(只要页面没有重载), 然后在需要的时候起到神奇的作用(或者通常, 将这个非常烦人的路由管理定义为我们路由的一部分).
+
+`ng-view`
+
+这是最后一个神奇的杰作. 在我们的控制器一节, 我们定义了路由. 作为定义的一部分, 每个路由表示一个URL, 控制器关联路由和一个模板. 当AngularJS发现一个路由改变时, 它就会加载关联的模板, 并将控制器添加给它, 同时替换`ng-view`为该模板的内容.
+
+有一件引人注目的事情是这里缺少`ng-controller`标签. 大部分应用程序某种程度上都需要一个与外部模板关联的MainController. 其最常见的位置是在body标签上. 在这种情况下, 我们并没有使用它, 因为完整的外部模板没有AngularJS内容需要引用到一个作用域.
+
+现在我们来看看与每个控制器关联的单独的模板, 就从"食谱列表"模板开始:
+
+	<!-- File is chapter4/guthub/app/view/list.html -->
+	<h3>Recipe List</h3>
+	<ul class="recipes">
+		<li ng-repeat="recipe in recipes">
+			<div><a ng-href="/#/view/{{recipe.id}}">{{recipe.title}}</a></div>
+		</li>
+	</ul>
+
+是的, 它是一个非常无聊(普通)的模板. 这里只有两个有趣的点. 第一个是非常标准的`ng-repeat`标签用法. 他会获得作用域内的所有食谱并重复检出它们.
+
+第二个是`ng-href`标签的用法而不是`href`属性. 这是一个在AngularJS加载期间纯粹无效的空白链接. `ng-href`会确保任何时候都不会给用户呈现一个畸形的链接. 总是会使用它在任何时候使你的URLs都是动态的而不是静态的.
+
+当然, 你可能感到奇怪: 控制器在哪里? 这里没有`ng-controller`定义, 也确实没有Main Controller定义. 这是路由映射发挥的作用. 如果你还记得(或者往前翻几页), `/`路由会重定向到列表模板并且带有与之关联的ListController. 因此, 当引用任何变量或者类似的东西时, 它都在List Controller作用域内部.
+
+现在我们来看一些有更多实质内容的东西: 视图形式.
+
+	<!-- File is chapter4/guthub/app/views/viewRecipe.html -->
+	<h2>{{recipe.title}}</h2>
+
+	<div>{{recipe.decription}}</div>
+
+	<h3>Ingredients</h3>
+	<span ng-show="recipe.ingredients.length == 0">No Ingredients</span>
+	<ul class="unstyled" ng-hide="recipe.ingredients.length == 0">
+		<li ng-repeat="ingredient in recipe.ingredients">
+			<span>{{ingredient.amount}}</span>
+			<span>{{ingredient.amountUnits</span>
+			<span>{{ingredient.ingredientName}}</span>
+		</li>
+	</ul>
+
+	<h3>Instructions</h3>
+	<div>{{recipe.instructions}}</div>
+
+	<form ng-submit="edit()" class="form-horizontal">
+		<div class="form-actions">
+			<button class="btn btn-primary">Edit</button>
+		</div>
+	</form>
+
+这是另一个不错的, 很小的包含模板. 我们将提醒你注意三件事, 虽然不会按照它们所出现的顺序.
+
+第一个就是非常标准的`ng-repeat`. 食谱(recipes)再次出现在View Controller作用域中, 这是用过在页面现实给用户之前通过`resolve`函数加载的. 这确保用户查看它时也面不是一个破碎的, 未加载的状态.
+
+接下来一个有趣的用法是使用`ng-show`和`ng-class`(这里应该是`ng-hide`)来设置模板的样式. `ng-show`标签被添加到\<i\>标签上, 这是用来显示一个星号标记的icon. 现在, 这个星号标记只在食谱是一个特色食谱的时候才显示(例如通过`recipe.featured`布尔值来标记). 理想的情况下, 为了确保适当的间距, 你需要使用一个空白的空格图标, 并给这个空格图标绑定`ng-hide`指令, 然后同归同样的AngularJS表达式`ng-show`来显示. 这是一个常见的用法, 显示一个东西并在给定的条件下来隐藏.
+
+`ng-class`用于添加一个类(CSS类)给\<h2\>标签(在这种情况下就是"特色")当食谱是一个特色食谱时. 它添加了一些特殊的高亮来使标题更加引人注目.
+
+最后一个需要注意的时表单上的`ng-submit`指令. 这个指令规定在表单被提交的情况下调用`scope`中的`edit()`函数. 当任何没有关联明确函数的按钮被点击时机会提交表单(这种情况下便是Edit按钮). 同样, AngularJS足够智能的在作用域中(从模块,路由,控制器中)在正确的时间里引用和调用正确的方法.
+
+现在我们可以来看看我们最后的模板(可能目前为止最复杂的一个), 食谱表单模板:
+
+	<!-- file is chapter4/guthub/app/views/recipeForm.html -->
+	<h2>Edit Recipe</h2>
+	<form name="recipeForm" ng-submit="save()" class="form-horizontal">
+		<div class="control-group">
+			<label class="control-label" for="title">Title:</label>
+			<div class="controls">
+				<input ng-model="recipe.title" class="input-xlarge" id="title" focus required>
+			</div>
+		</div>
+
+		<div class="control-group">
+			<label class="control-label" for="description">Description:</label>
+			<div class="controls">
+				<textarea ng-model="recipe.description" class="input-xlarge" id="description"></textarea>
+			</div>
+		</div>
+
+		<div class="control-group">
+			<label class="control-label" for="ingredients">Ingredients:</label>
+			<div class="controls">
+				<ul id="ingredients" class="unstyled" ng-controller="IngredientsCtrl">
+				<li ng-repeat="ingredient in recipe.ingredients">
+					<input ng-model="ingredient.amount" class="input-mini">
+					<input ng-model="ingredient.amountUnits" class="input-small">
+					<input ng-model="ingredient.ingredientName">
+					<button type="button" class="btn btn-mini" ng-click="removeIngredient($index)"><i class="icon-minus-sign"></i> Delete </button>
+				</li>
+				<button type="button" class="btn btn-mini" ng-click="addIngredient()"><i class="icon-plus-sign"></i> Add </button>
+			</ul>
+			</div>
+		</div>
+
+		<div class="control-group">
+			<label class="control-label" for="instructions">Instructions:</label>
+			<div class="controls">
+				<textarea ng-model="recipe.instructions" class="input-xxlarge" id="instructions"></textarea>
+			</div>
+		</div>
+
+		<div class="form-actions">
+			<button class="btn btn-primary" ng-disabled="recipeForm.$invalid">Save</button>
+			<button type="button" ng-click="remove()" ng-show="!recipe.id" class="btn">Delete</button>
+		</div>
+	</form>
+
+不要惊慌. 它看起来像很多代码, 并且它时一个很长的代码, 但是如果你认真研究以下它, 你会发现它并不是非常复杂. 事实上, 其中很多都是很简单的, 比如重复的显示可编辑输入字段用于编辑食谱的模板:
+
++ `focus`指令被添加到第一个输入字段上(`title`输入字段). 这确保当用户导航到这个页面时, 标题字段会自动聚焦, 并且用户可以立即开始输入标题信息.
+
++ `ng-submit`指令与前面的例子非常相似, 因此我们不会深入讨论它, 它只是保存是朋友的状态和编辑过程的结束信号. 它会挂接到Edit Controller中的`save()`函数.

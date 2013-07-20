@@ -582,4 +582,31 @@ New控制器几乎与Edit控制器完全一样. 实际上, 你可以结合两个
 
 + `focus`指令被添加到第一个输入字段上(`title`输入字段). 这确保当用户导航到这个页面时, 标题字段会自动聚焦, 并且用户可以立即开始输入标题信息.
 
-+ `ng-submit`指令与前面的例子非常相似, 因此我们不会深入讨论它, 它只是保存是朋友的状态和编辑过程的结束信号. 它会挂接到Edit Controller中的`save()`函数.
++ `ng-submit`指令与前面的例子非常相似, 因此我们不会深入讨论它, 它只是保存是食谱的状态和编辑过程的结束信号. 它会挂接到Edit Controller中的`save()`函数.
+
++ `ng-model`指令用于将不同的文本输入框和文本域绑定到模型中.
+
+在这个页面更有趣的一方面, 并且我们建议你花一点之间来了解它的便是配料列表部分的`ng-controller`标签. 让我们花一分钟的事件来了解以下这里发生了什么.
+
+我们看到了一个显示配料成份的列表, 并且容器标签关联了一个`ng-controller`. 这意味着这个`\<ul\>`标签是Ingredients Controller的作用域. 但是这个模板实际的控制器是什么呢, 是Edit Controller? 事实证明, Ingredients Controller是作为Edit Controller的子控制器创建的, 从而继承了Edit Controller的作用域. 这就是为什么它可以从Edit Controller访问食谱对象(recipe object)的原因.
+
+此外, 它还增加了一个`addIngredient()`方法, 这是通过处理高亮的`ng-click`使用的, 那么就只能在`\<ul\>`标签作用域内访问. 那么为什么你需要这么做呢? 因为这是分离你担忧的最好的方式. 为什么Edit Controller需要一个`addIngredients()`方法, 问99%的模板都不会关心它. 因为如此精确你的子控制器和嵌套控制器是很不错的, 它可以包含任务并循序你分离你的业务逻辑到更多的可维护模块中.
+
++ 另外一个控制器便是我们在这里想要深入讨论的表单验证控制. 它很容易在AngularJS中设置一个特定的表单字段为"必填项". 只需要简单的添加required标签到输入框上(与前面的代码中的情况一样). 但是现在你要怎么对它.
+
+为此, 我们先跳到保存按钮部分. 注意它上面有一个`ng-disabled`指令, 这换言之就是`recipeForm.$invalid`. 这个`recipeForm`是我们已经声明的表单名称. AngularJS增加了一些特殊的变量(`$valid`和`$invalid`只是其中两个)允许你控制表单的元素. AngularJS会查找到所有的必填元素并更新所对应的特殊变量. 因此如果我们的Recipe Title为空, `recipeForm.$invalid`就会被这只为true(`$valid`就为false), 同时我们的保存(Save)按钮就会立刻被禁用.
+
+我们还可以给一个文本输入框设置最大和最小长度(输入长度), 以及一个用于验证一个输入字段的正则表达式模式. 另外, 这里还有只在满足特定条件时用于显示特定错误消息的高级用法. 让我们使用一个很小的分支例子来看看:
+
+	<form name="myForm">
+		User name: <input type="text" name="userName" ng-model="user.name" ng-minlength="3">
+		<span class="error" ng-show="myForm.userName.$error.minlength">Too Short!</span>
+	</form>
+
+在前面的这个例子中, 我们添加了一要求: 用户名至少是三个字符(通过使用`ng-minlength`指令). 现在, 表单范围内会关心每个命名输入框的填充形式--在这个例子中我们只有一个`userName`--其中每个输入框都会有一个`$error`对象(这里具体的还包括什么样的错误或者没有错误: `required`, `minlength`, `maclength`或者模式)和一个`$valid`标签来表示输入框本身是否有效.
+
+我们可以利用这个来选择性的将错误信息显示给用户, 这根据不用的输入错误类型来显示, 正如我们上面的实例所示.
+
+跳回到我们原来的模板中--Recipe表单模板--在这里的ingredients repeater里面还有另外一个很好的`ng-show`高亮的用法. 这个Add Ingredient按钮只会在最后的一个配料的旁边显示. 着可以通过在一个repeater元素范围内调用一个`ng-show`并使用特殊的`$last`变量来完成.
+
+最后我们还有最后的一个`ng-click`, 这是附加的第二个按钮, 用于删除该食谱. 注意这个按钮只会在食谱尚未保存的时候显示. 虽然通常它会编写一个更有意义的`ng-hide="recipe.id", 有时候它会使用更有语义的`ng-show="!recipe.id". 也就是说, 如果食谱没有一个id的时候显示, 而不是在食谱有一个id的时候隐藏.

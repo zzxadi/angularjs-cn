@@ -613,3 +613,87 @@ New控制器几乎与Edit控制器完全一样. 实际上, 你可以结合两个
 
 ##测试
 
+随着控制器部分, 我们已经推迟向你显示测试部分了, 但你知道它会即将到来, 不是吗? 在这一节, 我们将会涵盖你已经编写部分的代码测试, 以及涉及你要如何编写它们.
+
+###单元测试
+
+第一个, 也是非常重要的一种测试是单元测试. 对于控制器(指令和服务)的测试你已经开发和编写的正确的结构, 并且你可能会想到它们会做什么.
+
+在我们深入到各个单元测试之前, 让我们围绕所有我们的控制器单元测试来看看测试装置:
+
+	describle('Controllers', function() {
+		var $scope, ctrl;
+		//you need to include your module in a test
+		beforeEach(module('guthub'));
+		beforeEach(function() {
+			this.addMatchers({
+				toEqualData: function(expected) {
+					return angular.equals(this.actual, expected);
+				}
+			});
+		});
+
+		describle('ListCtrl', function() {....});
+		// Other controller describles here as well
+	});
+
+这个测试装置(我们仍然使用Jasmine的行为方式来编写这些测试)做了几件事情:
+
+1. 创建一个全局(至少对于这个测试规范是这个目的)可访问的作用域和控制器, 所以我们不用担心每个控制器会创建一个新的变量.
+
+2. 初始化我们应用程序所用的模块(在这里是Guthub).
+
+3. 添加一个我们称之为`equalData`的特殊的匹配器. 这基本上允许我们在资源对象(就像食谱)通过`$resource`服务和调用RESTful来执行断言(测试判断).
+
+> 记得在任何我们处理在`ngRsource`上返回对象的断言时添加一个称为`equalData`特殊匹配器. 这是因为`ngRsource`返回对象还有额外的方法在它们失败时默认希望调用equal方法.
+
+这个装置到此为止, 让我们来看看List Controller的单元测试:
+
+	describle('ListCtrl', function(){
+		var mockBackend, recipe;
+		// _$httpBackend_ is the same as $httpBackend. Only written this way to diiferentiate between injected variables and local variables
+		breforeEach(inject(function($rootScope, $controller, _$httpBackend_, Recipe) {
+			recipe = Recipe;
+			mockBackend = _$httpBackend_;
+			$scope = $rootScope.$new();
+			ctrl = $controller('ListCtrl', {
+				$scope: $scope,
+				recipes: [1, 2, 3]
+			});
+		}));
+
+		it('should have list of recipes', function() {
+			expect($scope.recipes).toEqual([1, 2, 3]);
+		});
+	});
+
+记住这个List Controller只是我们最简单的控制器之一. 这个控制器的构造器只是接受一个食谱列表并将它保存到作用域中. 你可以编写一个测试给它, 但它似乎有一点不合理(我们还是这么做了, 因为这个测试很不错).
+
+相反, 更有趣的是MulyiRecipeLoader服务方面. 它负责从服务器上获取食谱列表并将它作为一个参数传递(当通过`$route`服务正确的连接时).
+
+	describe('MultiRecipeLoader', function() {
+		var mockBackend, recipe, loader;
+		// _$httpBackend_ is the same as $httpBackend. Only written this way to differentiate between injected variables and local variables. 
+
+		beforeEach(inject(function(_$httpBackend_, Recipe, MultiRecipeLoader) {
+			recipe = Recipe;
+			mockBackend = _$httpBackend_;
+			loader = MultiRecipeLoader;
+		}));
+
+		it('should load list of recipes', function() { 
+			mockBackend.expectGET('/recipes').respond([{id: 1}, {id: 2}]);
+
+			var recipes;
+
+			var promise = loader(); promise.then(function(rec) {
+				recipes = rec;
+			});
+
+			expect(recipes).toBeUndefined( ) ;
+
+			mockBackend. f lush() ;
+
+			expect(recipes).toEqualData([{id: 1}, {id: 2}]); });
+	});
+	// Other controller describes here as well

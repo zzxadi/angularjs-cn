@@ -49,3 +49,95 @@ Table 6-1 HTML Validation Schemes
 由于你可以使用任意的这些形式, [AngularJS文档](http://docs.angularjs.org/)中列出了一个驼峰式的指令, 而不是任何这些选项. 例如, 在`ngRepeat`标题下你可以找到`ng-repeat`. 稍后你会看到, 在你定义你自己的指令时你将会使用这种命名格式.
 
 如果你不适用HTML验证器(大多数人都不使用), 你可以很好的使用在目前你所见过的例子中的命名空间-指令[namespace-directive]语法
+
+##API预览
+
+下面是一个创建任意指令伪代码模板
+
+	var myModule = angular.module(...);
+
+	myModule.directive('namespaceDirectiveName', function factory(injectables) {
+		var directiveDefinitionObject = {
+			restrict: string,
+			priority: number,
+			template: string,
+			templateUrl: string,
+			replace: bool,
+			transclude: bool,
+			scope: bool or object,
+			controller: function controllerConstructor($scope, $element, $attrs, $transclude){...},
+			require: string,
+			link: function postLink(scope, iElement, iAttrs) {...},
+			compile: function compile(tElement, tAttrs, transclude){
+				return: {
+					pre: function preLink(scope, iElement, iAttrs, controller){...},
+					post: function postLink(scope, iElement, iAttrs, controller){...}
+				}
+			}
+		};
+		return directiveDefinitionObject;
+	});
+
+有些选项是互相排斥的, 它们大多数都是可选的, 并且它们都有有价值的详细说明:
+
+当你使用每个选项时, 表6-2提供了一个概述.
+
+Table 6-2 指令定义选项
+
+<table>
+	<thead>
+		<tr>
+			<th>Property</th>
+			<th>Purpose</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>restrict</td>
+			<td>声明指令可以作为一个元素, 属性, 类, 注释或者任意的组合如何用于模板中</td>
+		</tr>
+		<tr>
+			<td>priority</td>
+			<td>设置模板中相对于其他元素上指令的执行顺序</td>
+		</tr>
+		<tr>
+			<td>template</td>
+			<td>指令一个作为字符串的内联模板. 如果你指定一个模板URL就不要使用这个模板属性.</td>
+		</tr>
+		<tr>
+			<td>templateUrl</td>
+			<td>指定通过URL加载的模板. 如果你指定了字符串的内联模板就不需要使用这个.</td>
+		</tr>
+		<tr>
+			<td>replace</td>
+			<td>如果为true, 则替换当前元素. 如果为false或者未指定, 则将这个指令追加到当前元素上.</td>
+		</tr>
+		<tr>
+			<td>transclude</td>
+			<td>让你将一个指令的原始自节点移动到心模板位置内.</td>
+		</tr>
+		<tr>
+			<td>scope</td>
+			<td>为这个指令创建一个新的作用域而不是继承父作用域.</td>
+		</tr>
+		<tr>
+			<td>controller</td>
+			<td>为跨指令通信创建一个发布的API.</td>
+		</tr>
+		<tr>
+			<td>require</td>
+			<td>需要其他指令服务于这个指令来正确的发挥作用.</td>
+		</tr>
+		<tr>
+			<td>link</td>
+			<td>以编程的方式修改生成的DOM元素实例, 添加事件监听器, 设置数据绑定.</td>
+		</tr>
+		<tr>
+			<td>compile</td>
+			<td>以编程的方式修改一个指令的DOM模板的副本特性, 如同使用`ng-repeat`时. 你的编译函数也可以返回链接函数来修改生成元素的实例.</td>
+		</tr>
+	</tbody>
+</table>
+
+下面让我们深入细节来看看.
+

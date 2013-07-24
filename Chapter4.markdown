@@ -531,6 +531,8 @@ New控制器几乎与Edit控制器完全一样. 实际上, 你可以结合两个
 
 最后一个需要注意的时表单上的`ng-submit`指令. 这个指令规定在表单被提交的情况下调用`scope`中的`edit()`函数. 当任何没有关联明确函数的按钮被点击时机会提交表单(这种情况下便是Edit按钮). 同样, AngularJS足够智能的在作用域中(从模块,路由,控制器中)在正确的时间里引用和调用正确的方法.
 
+> **上面这段解释与原书代码有一些差别, 读者自行理解. 原书作者暂未给出解答.**
+
 现在我们可以来看看我们最后的模板(可能目前为止最复杂的一个), 食谱表单模板:
 
 	<!-- file is chapter4/guthub/app/views/recipeForm.html -->
@@ -697,3 +699,88 @@ New控制器几乎与Edit控制器完全一样. 实际上, 你可以结合两个
 			expect(recipes).toEqualData([{id: 1}, {id: 2}]); });
 	});
 	// Other controller describes here as well
+
+在我们的测试中, 我们通过挂接到一个模拟的`HttpBackend`来测试MultiRecipeLoader. 这来自于测试运行时所包含的`angular-mocks.js`文件. 只需将它注入到你的`beforeEach`方法中就足以让你设置预期目的. 接下来, 我们进行了一个更有意义的测试, 我们期望设置一个服务器的GET请求来获取recipes, 浙江返回一个简单的数组对象. 然后使用我们新的自定义的匹配器来确保正确的返回数据. 注意在模拟backend中的`flush()`调用, 这将告诉模拟Backend从服务器返回响应. 你可以使用这个机制来测试控制流程和查看你的应用程序在服务器返回一个响应之前和之后是如何处理的.
+
+我们将跳过View Controller, 因为它除了在作用域中添加一个`edit()`方法之外基于与List Controller一模一样. 这是非常简单的测试, 你可以在你的测试中注入`$location`并检查它的值.
+
+现在让我们跳到Edit Controller, 其中有两个有趣的点我们进行单元测试. 一个是类似我们之前看到过的`resolve`函数, 并且可以以同样的方式测试. 相反, 我们现在想看看我们可以如和测试`save()`和`remove()`方法. 让我们来看看对于它们的测试(假设我们的测试工具来自于前面的例子):
+
+	describle('EditController', function() {
+		var mockBackend, location;
+		beforeEach(inject($rootScope, $controller, _$httpBackend_, $location, Recipe){
+			mockBackend = _$httpBackend_;
+			location = $location;
+			$scope = $rootScope.$new();
+
+			ctrl = $controller('EditCtrl', {
+				$scope: $scope,
+				$location: $location,
+				recipe: new Recipe({id: 1, title: 'Recipe'});
+			});
+		}));
+
+		it('should save the recipe', function(){
+			mockBackend.expectPOST('/recipes/1', {id: 1, title: 'Recipe'}).respond({id: 2});
+
+			// Set it to something else to ensure it is changed during the test
+			location.path('test');
+
+			$scope.save();
+			expect(location.path()).toEqual('/test');
+
+			mockBackend.flush();
+
+			expect(location.path()).toEqual('/view/2');
+		});
+
+		it('should remove the recipe', function(){
+			expect($scope.recipe).toBeTruthy();
+			location.path('test');
+
+			$scope.remove();
+
+			expect($scope.recipe).toBeUndefined();
+			expect(location.path()).toEqual('/');
+		});
+	});
+
+在第一个测试用, 我们测试了`save()`函数. 特别是, 我们确保在我们的对象保存时首先创建一个到服务器的POST请求, 然后, 一旦服务器响应, 地址就改变到新的持久对象的视图食谱页面.
+
+第二个测试更简单. 我们进行了简单的检测以确保在作用域中调用`remove()`方法的时候移除当前食谱, 然后重定向到用户主页. 这可以很容易通过注入`$location`服务到我们的测试中并使用它.
+
+其余的针对控制器的单元测试遵循非常相似的模式, 因此在这里我们跳过它们. 在他们的底层中, 这些单元测试依赖于一些事情:
+
++ 确保控制器(或者更可能是作用域)在结束初始化时达到正确的状态
+
++ 确认经行正确的服务器调用, 以及通过作用域在服务器调用期间和完成后去的正确的状态(通过在单元测试中使用我们的模拟后端服务)
+
++ 利用AngularJS的依赖注入框架着手处理元素以及控制器对象用于确保控制器会设置正确的状态.
+
+###脚本测试
+
+一旦我们对单元测试很满意, 我们可能禁不住的往后靠一下, 抽根雪茄, 收工. 但是AngularJS开发者不会这么做, 直到他们完成了他们的脚本测试(场景测试). 虽然单元测试确保我们的每一块JS代码都按照预期工作, 我们也要确保模板加载, 并正确的挂接到控制器上, 以及在模板重点击做正确的事情.
+
+这正是AngularJS带给你的脚本测试(场景测试), 它允许你做以下事情:
+
++ 加载你的应用程序
+
++ 浏览一个特定的页面
+
++ 随意的点击周围和输入文本
+
++ 确保发生正确的事情
+
+所以, 脚本测试如何在我们的"食谱列表"页面工作? 首先, 在我们开始实际的测试之前, 我们需要做一些基础工作.
+
+对于该脚本测试工作, 我们需要一个工作的Web服务器以准备从Guthub应用上接受请求, 同时将允许我们从它上面存储和获取一个食谱列表. 随意的更改代码以使用内存中的食谱列表(移除`$resource`食谱并只是将它转换为一个JSON对象), 或者复用和修改我们前面章节向你展示的Web服务器, 或者使用Yeoman!
+
+一旦我们有了一个服务器并运行起来, 同时服务于我们的应用程序, 然后我们就可以编写和运行下面的测试:
+
+	describle('Guthub App', function(){
+		it('should show a list of recipes', function(){
+			browser().navigateTo('/index.html');
+			//Our Default Guthub recipes list has two recipes
+			expect(repeater('.recipes li').count()).toEqual(2);
+		});
+	});

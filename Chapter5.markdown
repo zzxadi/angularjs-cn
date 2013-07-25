@@ -58,7 +58,7 @@ AngularJS为大多数常用请求类型都提供了类似的简便方法，他�
 + PUT
 + JSONP
 
-##进一步配置你的请求
+###进一步配置你的请求
 
 有时，工具箱提供的标准请求配置还不够,它可能是因为你想做下面这些事情:
 
@@ -101,7 +101,7 @@ GET、POST和其它的简便方法已经设置了请求的method类型,所以不
 
 还有部分另外的选项可以被配置,在下面的章节中，我们将会深度探索这些选项.
 
-##设定HTTP头信息(Headers)
+###设定HTTP头信息(Headers)
 
 AngularJS有一个默认的头信息,这个头信息将会对所有的发送请求使用,它包含以下信息:
     1.Accept: application/json, text/plain, /
@@ -130,7 +130,7 @@ AngularJS有一个默认的头信息,这个头信息将会对所有的发送请�
     
 如何在应用中处理权限验证头信息的成熟示例将会在第八章的Cheetsheets示例部分给出.
 
-##缓存响应数据
+###缓存响应数据
 
 AngularJS为HTTP GET请求提供了一个开箱即用的简单缓存系统.缺省情况下,它对所有的请求都是禁用的,但是如果你想对你的请求启用缓存系统，你可以使用以下代码:
 
@@ -139,6 +139,58 @@ AngularJS为HTTP GET请求提供了一个开箱即用的简单缓存系统.缺�
     }).success(function() { // Handle success });
 
 这段代码启用了缓存系统，然后AngularJS将会缓存来自Server的响应数据.但对相同的URL的请求第二次发出时,AngularJS将会从缓存里面取出前一次的响应数据作为响应返回.这个缓存系统也很智能,即使你同时对相同URL发出多个请求,只有一个请求会发向Server,这个请求的响应数据将会反馈给所有(同时发起的)请求。
+
+然而这种做法从可用性的角度看可能是有所冲突的,当一个用户首先看到旧的结果,然后新的结果突然冒出来，比如一个用户可能即将单击一个数据项,而实际上这个数据项后台已经发生了变化.
+
+注意所有响应(即使是从缓存里取出的)本质上仍旧是异步响应.换句话说，期望你的利用缓存响应时的异步代码运行仍旧和他向后台服务器发出请求时的代码运行机制是一样的.
+
+###对请求(Request)和响应(Response)的数据所做的转换
+
+AngularJS对所有`$http`服务发起的请求和响应做一些基本的转换,它们包括:
+
++ 请求(Request)转换:
+    如果请求的Cofig配置对象的data属性包含一个对象，将会把这个对象序列化为JSON格式.
++ 响应(Response)转换:
+    如果探测到一个XSRF头,把它剥离掉.如果响应数据被探测为JSON格式,用JSON解析器把它反序列化为JSON对象.
+
+如果你需要部分系统默认提供的转换,或者想使用你自己的转换,你可以把你的转换函数作为Config配置对象的一部分传递进去(后面有细述).这些转换函数得到HTTP请求和HTTP响应的数据主体以及它们的头信息.然后把序列化的修改后版本返回出来.在Config对象里面配置这些函数需要使用·transformRequest·键和·transformResponse·键,这些都可以通过使用`$httpProvider·服务在模块的config函数里面配置它.
+
+我们什么时候使用这些哪?让我假设我们有一个服务器，它更习惯于jQuery运行的方式.它可能希望我们的POST数据以`key1=val1&key2=val2`字符串的形式传递，而不是以`{key1:val1,key2:val2}`这样的JSON格式.这个时候，我们可能相对每个请求做这样的转换,或者单个地增加transformRequest转换函数,为了达成这个示例这样的目标,我们将要设置一个通用transformRequet转换函数,以便对所有的发出请求,这个函数都可以把JSON格式转换为键值对字符串,下面代码演示了如何做这个工作:
+
+    var module = angular.module('myApp');
+    module.config(function ($httpProvider) {
+        $httpProvider.defaults.transformRequest = function(data) {
+            // We are using jQuery’s param method to convert our
+            // JSON data into the string form
+            return $.param(data);
+       };
+    });
+
+##单元测试
+
+目前为止，我们已经了解如何使用`$http`服务以及如何以可能的方式做你需要的配置.但是如何写一些单元测试来保证这些够真实有效的运行哪?
+
+正如我们曾经三番五次的提到的那样,AngularJS一直以测试为先的原则而设计.所以Angualr有一个模拟服务器后端，在单元测试中,它可以帮你就可以测试你发出的请求是否正确,甚至可以精确控制模拟响应如何得到处理,什么时候得到处理.
+
+让我们探索一下下面这样的单元测试场景:一个控制向服务器发起请求,从服务器得到数据,把它赋给作用域内的模型,然后以具体的模板格式显示出来.
+
+我们的`NameListCtrl`控制器是一个非常简单的控制器.它的存在只有一个目的：访问`names`API接口，然后把得到数据存储在作用域scope模型内.
+
+    function NamesListCtrl($scope, $http) {
+        $http.get('http://server/names', {params: {filter: ‘none’}}).
+            success(function(data) {
+                $scope.names = data;
+        });
+    }
+
+怎样对这个控制器做单元测试？在我们的单元测试中,我们必须保证下面这些条件:
+
++ `NamesListCtrl`能够找到所有的依赖项(并且正确的得到注入的这些依赖)》
++ 当控制器加载时尽可能快地立刻发情请求从服务器得到names数据.
++ 控制器能够正确地把响应数据存储到作用域scope的`names`变量属性中.
+
+
+
 
 
 

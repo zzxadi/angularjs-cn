@@ -10,7 +10,7 @@
 
 在本书中, 我们已经使用了Angular内置指令的`ng-directive-name`语法. 例如`ng-repeat`, `ng-view`和`ng-controller`. 这里, `ng`部分是Angular的命名空间, 并且dash之后的部分便是指令的名称.
 
-虽然我们喜欢这个方便输入的语法, 但是在大部分的HTML验证机制中它不是有效的. 为了支持这些, Angular指令允许你以几种方式调用任意的指令. 以下在表61中列出的语法, 都是等价的并能够让你偏爱的[首选的]验证器正常工作
+虽然我们喜欢这个方便输入的语法, 但是在大部分的HTML验证机制中它不是有效的. 为了支持这些, Angular指令允许你以几种方式调用任意的指令. 以下在表6-1中列出的语法, 都是等价的并能够让你偏爱的[首选的]验证器正常工作
 
 Table 6-1 HTML Validation Schemes
 
@@ -140,4 +140,18 @@ Table 6-2 指令定义选项
 </table>
 
 下面让我们深入细节来看看.
+
+###为你的指令命名
+
+你可以用模块的指令函数为你的指令创建一个名称, 如下所示:
+
+	myModule.directive('directiveName', function factory(injectables){...});
+
+虽然你可以使用任何你喜欢的名字命名你的指令, 该符号会选择一个前缀命名空间标识你的指令, 同时避免与可能包含在你的项目中的外部指令冲突.
+
+你当然不希望它们使用一个`ng-`前缀, 因为这可能与Angular自带的指令相冲突. 如果你从事于SuperDuper MegaCorp, 你可以选择一个super-, superduper-, 或者甚至是superduper-megacorp-, 虽然你可能选择第一个选项, 只是为了方便输入.
+
+正如前面所描述的, Angular使用一个标准化的指令命名机制, 并且试图有效的在模板中使用驼峰式的指令命名方式来确保在5个不同的友好的验证器中正常工作. 例如, 如果你已经选择了`super-`作为你的前缀, 并且你在编写一个日期选择(datepicker)组件, 你可能将它命名为`superDatePicker`. 在模板中, 你可以像这样来使用它: `super-date-picker`, `super:date-picker`, `data-super-date-picker`或者其他多样的形式.
+
+
 

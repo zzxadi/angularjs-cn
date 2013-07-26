@@ -189,6 +189,52 @@ AngularJS对所有`$http`服务发起的请求和响应做一些基本的转换,
 + 当控制器加载时尽可能快地立刻发情请求从服务器得到names数据.
 + 控制器能够正确地把响应数据存储到作用域scope的`names`变量属性中.
 
+在我们的单元测试中构造一个控制器时，我们给它注入一个scope作用域和一个伪造的HTTP服务,在构建测试控制器的方式和生产中构建控制器的方式其实是一样的.这是推荐方法，尽管它看上去上有点复杂。让我看一下具体代码：
+    
+    describe('NamesListCtrl', function(){
+        var scope, ctrl, mockBackend;
+
+        // AngularJS is responsible for injecting these in tests
+        beforeEach(inject(function(_$httpBackend_, $rootScope, $controller) {
+            // This is a fake backend, so that you can control the requests
+            // and responses from the server
+            mockBackend = _$httpBackend_;
+
+            // We set an expectation before creating our controller,
+            // because this call will get triggered when the controller is created
+            mockBackend.expectGET('http://server/names?filter=none').
+                respond(['Brad', 'Shyam']);
+            scope = $rootScope.$new();
+
+            // Create a controller the same way AngularJS would in production
+            ctrl = $controller(PhoneListCtrl, {$scope: scope});
+        }));
+
+        it('should fetch names from server on load', function() {
+            // Initially, the request has not returned a response
+            expect(scope.names).toBeUndefined();
+            
+            // Tell the fake backend to return responses to all current requests
+            // that are in flight.
+            mockBackend.flush();
+            // Now names should be set on the scope
+            expect(scope.names).toEqual(['Brad', 'Shyam’]);
+        });
+    });
+
+##使用RESTful资源
+
+·$http·服务提供一个比较底层的实现来帮你发起XHR请求,但是同时也给提供了很强的可控性和弹性.在大多数情况下,我们处理的是对象集或者是封装有一定属性和方法的对象模型,比如带有个人资料的自然人对象或者信用卡对象.
+
+在上面这样的情况下，如果我们自己构建一个JS对象来表示这种较复杂对象模型，那做法就有点不够nice.如果我们仅仅想编辑某个对象的属性、保存或者更新一个对象，那我们如何让这些状态在服务器端持久化.
+
+`$resource`正好给你提供这种能力.AngularJS resources可以帮助我们以描述的方式来定义对象模型，可以定义一下这些特征：
+
++ resource的服务器端URL
++ 这种请求常用参数的类型
++ (你可以免费自动得到get、save、query、remove和delete方法),除了那些方法，你可以定义其它的方法，这些方法封装了对象模型的特定功能和业务逻辑(比如信用卡模型的charge()付费方法)
++ 响应的期望类型(数组或者一个独立对象)
++ 头信息
 
 
 

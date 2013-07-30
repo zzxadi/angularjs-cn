@@ -320,7 +320,7 @@ CreditCard.delete({id: 11})        DELETE   /user/123/card/11                   
 
 前面这个样例代码里面发生了很多事情，所以我们将会一个一个地认真讲解其中的重要部分:
 
-###resource资源的声明###
+###resource资源的声明
 
 
 

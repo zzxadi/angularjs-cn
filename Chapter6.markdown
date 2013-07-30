@@ -153,5 +153,56 @@ Table 6-2 指令定义选项
 
 正如前面所描述的, Angular使用一个标准化的指令命名机制, 并且试图有效的在模板中使用驼峰式的指令命名方式来确保在5个不同的友好的验证器中正常工作. 例如, 如果你已经选择了`super-`作为你的前缀, 并且你在编写一个日期选择(datepicker)组件, 你可能将它命名为`superDatePicker`. 在模板中, 你可以像这样来使用它: `super-date-picker`, `super:date-picker`, `data-super-date-picker`或者其他多样的形式.
 
+##指令定义对象
+
+正如前面提到的, 在指令定义中大多数的选项都是可选的. 实际上, 这里并没有硬性的要求必须选择哪些选项, 并且你可以构造出许多有利于指令的子集参数. 让我们来逐步讨论这些选项是做什么的.
+
+####restrict
+
+`restrict`属性允许你指定你的指令声明风格--也就是说, 它是否能够用于作为元素名称, 属性, 类[className], 或者注释. 你可以根据表6-3来指定一个或多个声明风格, 只需要使用一个字符串来表示其中的每一中风格:
+
+Table 6-3 指令声明用法选项
+
+<table>
+	<thead>
+		<tr>
+			<th>Character</th>
+			<th>Declaration style</th>
+			<th>Example</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>E</td>
+			<td>element</td>
+			<td>&lt;my-menu title=<i>Products</i>&gt;&lt;/my-menu&gt;</td>
+		</tr>
+		<tr>
+			<td>A</td>
+			<td>attribute</td>
+			<td>&lt;div my-menu=<i>Products</i>&gt;&lt;/div&gt;</td>
+		</tr>
+		<tr>
+			<td>C</td>
+			<td>class</td>
+			<td>&lt;div class=my-menu:<i>Products</i>&gt;&lt;/div&gt;</td>
+		</tr>
+		<tr>
+			<td>M</td>
+			<td>comment</td>
+			<td>&lt;!--directive:my-menu Products--&gt;</td>
+		</tr>
+	</tbody>
+</table>
+
+如果你希望你的指令用作一个元素或者一个属性, 那么你应该传递`EA`作为`restrict`字符串.
+
+如果你忽略了`restrict`属性, 则默认为`A`, 并且你的指令只能用作一个属性(属性指令).
+
+如果你计划支持IE8, 那么基于attribute-和class-的指令就是你最好的选择, 因为它需要额外的努力来使新元素正常工作. 可以查看Angular文档来详细了解这一点.
+
+####Priorities
+
+
 
 

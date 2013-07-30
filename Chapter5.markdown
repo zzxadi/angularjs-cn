@@ -189,18 +189,138 @@ AngularJS对所有`$http`服务发起的请求和响应做一些基本的转换,
 + 当控制器加载时尽可能快地立刻发情请求从服务器得到names数据.
 + 控制器能够正确地把响应数据存储到作用域scope的`names`变量属性中.
 
+在我们的单元测试中构造一个控制器时，我们给它注入一个scope作用域和一个伪造的HTTP服务,在构建测试控制器的方式和生产中构建控制器的方式其实是一样的.这是推荐方法，尽管它看上去上有点复杂。让我看一下具体代码：
+    
+    describe('NamesListCtrl', function(){
+        var scope, ctrl, mockBackend;
 
+        // AngularJS is responsible for injecting these in tests
+        beforeEach(inject(function(_$httpBackend_, $rootScope, $controller) {
+            // This is a fake backend, so that you can control the requests
+            // and responses from the server
+            mockBackend = _$httpBackend_;
 
+            // We set an expectation before creating our controller,
+            // because this call will get triggered when the controller is created
+            mockBackend.expectGET('http://server/names?filter=none').
+                respond(['Brad', 'Shyam']);
+            scope = $rootScope.$new();
 
+            // Create a controller the same way AngularJS would in production
+            ctrl = $controller(PhoneListCtrl, {$scope: scope});
+        }));
 
+        it('should fetch names from server on load', function() {
+            // Initially, the request has not returned a response
+            expect(scope.names).toBeUndefined();
+            
+            // Tell the fake backend to return responses to all current requests
+            // that are in flight.
+            mockBackend.flush();
+            // Now names should be set on the scope
+            expect(scope.names).toEqual(['Brad', 'Shyam’]);
+        });
+    });
 
+##使用RESTful资源
 
+·$http·服务提供一个比较底层的实现来帮你发起XHR请求,但是同时也给提供了很强的可控性和弹性.在大多数情况下,我们处理的是对象集或者是封装有一定属性和方法的对象模型,比如带有个人资料的自然人对象或者信用卡对象.
 
+在上面这样的情况下，如果我们自己构建一个JS对象来表示这种较复杂对象模型，那做法就有点不够nice.如果我们仅仅想编辑某个对象的属性、保存或者更新一个对象，那我们如何让这些状态在服务器端持久化.
 
+`$resource`正好给你提供这种能力.AngularJS resources可以帮助我们以描述的方式来定义对象模型，可以定义一下这些特征：
 
++ resource的服务器端URL
++ 这种请求常用参数的类型
++ (你可以免费自动得到get、save、query、remove和delete方法),除了那些方法，你可以定义其它的方法，这些方法封装了对象模型的特定功能和业务逻辑(比如信用卡模型的charge()付费方法)
++ 响应的期望类型(数组或者一个独立对象)
++ 头信息
 
+------------------------------------------------------
+什么时候你可以用Angular Resources组件？
 
+只有你的服务器端设施是以RESTful方式提供服务的时候，你才应该用Angular resources组件.比如信用卡那个案例,我们将用它作为本章这一部分的例子，他将包括以下内容:
 
+1. 给地址`/user/123/card`发送一个GET请求，将会得到用户123的信用卡列表.
+2. 给地址`/user/123/card/15`发送一个GET请求,将会得到用户123本人的ID为15的信用卡信息
+3. 给地址`/user/123/card`发送一个在POST请求数据部分包含信用卡信息的POST请求,将会为用户123新创建一个信用卡
+4. 给地址`/user/123/card/15`发送一个在POST请求数据部分包含信用卡信息的POST请求,将会更新用户123的ID为5的信用卡的信息.
+5. 给地址`/user/123/card/15`一个方法为DELETE类型的请求,将会删除掉用户123的ID为5的信用卡的数据.
+
+-------------------------------------------------------
+
+除了按照你的要求给你提供一个查询服务器端信息的对象,`$resource`还可以让你使用返回的数据对象就像他们是持久化数据模型一样，可以修改他们，还可以把你的修改持久化存储下来.
+
+`ngResource`是一个单独的、可选的模块.要想使用它，你看需要做以下事情：
+
++ 在你的HTML文件里面引用angular-resource.js的实际地址
++ 在你的模块依赖里面声明对它的依赖(例如,angular.module('myModule',['ngResource'])).
++ 在需要的地方，注入$resource这个依赖项.
+
+在我们看怎样用ngResource方法创建一个resource资源之前，我们先看一下怎样用基本的$http服务做类似的事情.比如我们的信用卡resource，我们想能够读取、查询、保存信用卡信息，另外还要能为信用卡还款.
+
+这儿是上述需求一个可能的实现：
+
+    myAppModule.factory('CreditCard', ['$http', function($http) {
+        var baseUrl = '/user/123/card';
+        return {
+            get: function(cardId) {
+                return $http.get(baseUrl + '/' + cardId);
+            },
+            save: function(card) {
+                var url = card.id ? baseUrl + '/' + card.id : baseUrl;
+                return $http.post(url, card);
+            },
+            query: function() {
+                return $http.get(baseUrl);
+            },
+            charge: function(card) {
+                return $http.post(baseUrl + '/' + card.id, card, {params: {charge: true}});
+            }
+        };
+    }]);
+
+取代以上方式，你也可以轻松创建一个在你的应用中始终如一的Angular资源服务，就像下面代码这样：
+    
+    myAppModule.factory('CreditCard', ['$resource', function($resource) {
+        return $resource('/user/:userId/card/:cardId',
+            {userId: 123, cardId: '@id'},
+            {charge: {method:'POST', params:{charge:true}, isArray:false});
+    }]);
+
+做到现在，你就可以任何时候从Angular注入器里面请求一个CreditCard依赖，你就会得到一个Angular资源,默认情况下，这个资源会提供一些初始的可用方法.表格5-1列出了这些初始方法以及他们的运行行为，这样你就可以知道在服务器怎样配置来配合这些方法了.
+
+表格5-1 一个信用卡reource
+Function                           Method   URL                                        Expected Return
+CreditCard.get({id: 11})           GET      /user/123/card/11                          Single JSON
+CreditCard.save({}, ccard)         POST     /user/123/card with post data “ccard”      Single JSON
+CreditCard.save({id: 11}, ccard)   POST     /user/123/card/11 with post data “ccard”   Single JSON
+CreditCard.query()                 GET      /user/123/card                             JSON Array
+CreditCard.remove({id: 11})        DELETE   /user/123/card/11                          Single JSON
+CreditCard.delete({id: 11})        DELETE   /user/123/card/11                          Single JSON
+
+让我们看一个信用卡resource使用的代码样例，这样可以让你理解起来觉得更浅显易懂.
+
+    // Let us assume that the CreditCard service is injected here
+    // We can retrieve a collection from the server which makes the request
+    // GET: /user/123/card
+    var cards = CreditCard.query();
+    // We can get a single card, and work with it from the callback as well
+    CreditCard.get({cardId: 456}, function(card) {
+        // each item is an instance of CreditCard
+        expect(card instanceof CreditCard).toEqual(true);
+        card.name = "J. Smith";
+        // non-GET methods are mapped onto the instances
+        card.$save();
+        // our custom method is mapped as well.
+        card.$charge({amount:9.99});
+        // Makes a POST: /user/123/card/456?amount=9.99&charge=true
+        // with data {id:456, number:'1234', name:'J. Smith'}
+    });
+
+前面这个样例代码里面发生了很多事情，所以我们将会一个一个地认真讲解其中的重要部分:
+
+###resource资源的声明
 
 
 

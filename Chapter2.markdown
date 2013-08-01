@@ -846,7 +846,7 @@ CountController定义如下:
 
 ##使用模块组织依赖
 
-在任何不平凡的应用程序中, 在你的代码领域中弄清楚如何组织功能职责通常都是一项间距的任务. 我们已经看到了控制器是如何到视图模板中给我们提供一个存放暴露正确数据和函数的区域. 但是我们在哪里安置支持应用程序的的其他代码呢? 最明显的方式就是将它们放置在控制器中的函数中.
+在任何不平凡的应用程序中, 在你的代码领域中弄清楚如何组织功能职责通常都是一项艰巨的任务. 我们已经看到了控制器是如何到视图模板中给我们提供一个存放暴露正确数据和函数的区域. 但是我们在哪里安置支持应用程序的的其他代码呢? 最明显的方式就是将它们放置在控制器中的函数中.
 
 对于小型应用程序和目前我们所见过的例子这中方式工作得很好, 但是在实际的应用程序中将很快变得难以管理. 控制器将成为堆积一切以及我们需要做任何事情的垃圾场. 它们可能很难理解, 也可能很难改变(难以维护).
 
@@ -1122,21 +1122,33 @@ Angular自带了几个过滤器, 像我们已经看到的currency:
     aMailServices.config(emailRouteConfig);
     
     //Some take emails
-    messages = [{        id: 0, sender: 'jean@somecompany.com',
+    messages = [{
+        id: 0, sender: 'jean@somecompany.com',
         subject: 'Hi there, old friend',
         date: 'Dec 7, 2013 12:32:00',
         recipients: ['greg@somecompany.com'],
-        message: 'Hey, we should get together for lunch somet ime and catch up. There are many things we should collaborate on this year.'    },{        id: 1, sender: 'maria@somecompany.com',
-        subject : 'Where did you leave my laptop?' ,        date: 'Dec 7, 2013 8:15:12',
+        message: 'Hey, we should get together for lunch somet ime and catch up. There are many things we should collaborate on this year.'
+    },{
+        id: 1, sender: 'maria@somecompany.com',
+        subject : 'Where did you leave my laptop?' ,
+        date: 'Dec 7, 2013 8:15:12',
         recipients: ['greg@somecompany.com'],
-        message: 'I thought you were going to put it in my desk drawer. But i t does not seem to be there. '    },{        id: 2, sender: 'bill@somecompany.com',
-        subject: 'Lost python',        date: 'Dec 6, 2013 20:35:02',
+        message: 'I thought you were going to put it in my desk drawer. But i t does not seem to be there. '
+    },{
+        id: 2, sender: 'bill@somecompany.com',
+        subject: 'Lost python',
+        date: 'Dec 6, 2013 20:35:02',
         recipients: ['greg@somecompany.com'],
-        message: "Nobody panic, but my pet python is missing from her cage. She doesn't move too fast, so just call me if you see her."    }];
-    // Publish our messages for the list template
-    function ListController($scope){
-        $scope.messages = messages;    }
-    //Get the message id fron the route (parsed from the URL) and use it to find the right message object.
+        message: "Nobody panic, but my pet python is missing from her cage. She doesn't move too fast, so just call me if you see her."
+    }];
+
+    // Publish our messages for the list template
+
+    function ListController($scope){
+        $scope.messages = messages;
+    }
+
+    //Get the message id fron the route (parsed from the URL) and use it to find the right message object.
     function DetailController($scope, $routeParams){
         $scope.message = messages[$routeParams.id];
     }

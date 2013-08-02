@@ -153,7 +153,7 @@ Table 6-2 指令定义选项
 
 正如前面所描述的, Angular使用一个标准化的指令命名机制, 并且试图有效的在模板中使用驼峰式的指令命名方式来确保在5个不同的友好的验证器中正常工作. 例如, 如果你已经选择了`super-`作为你的前缀, 并且你在编写一个日期选择(datepicker)组件, 你可能将它命名为`superDatePicker`. 在模板中, 你可以像这样来使用它: `super-date-picker`, `super:date-picker`, `data-super-date-picker`或者其他多样的形式.
 
-##指令定义对象
+###指令定义对象
 
 正如前面提到的, 在指令定义中大多数的选项都是可选的. 实际上, 这里并没有硬性的要求必须选择哪些选项, 并且你可以构造出许多有利于指令的子集参数. 让我们来逐步讨论这些选项是做什么的.
 
@@ -203,6 +203,131 @@ Table 6-3 指令声明用法选项
 
 ####Priorities
 
+在你有多个指令绑定在一个单独的DOM元素并要确定它们的应用顺序的情况下, 你可以使用`priority`属性来指定应用的顺序. 数值高的首先运行. 如果你没有指定, 则默认的priority为0.
 
+很难发生需要设置优先级的情况. 一个需要设置优先级例子是`ng-repeat`指令. 当重复元素时, 我们希望Angular在应用指令之前床在一个模板元素的副本. 如果不这么做, 其他的指令将会应用到标准的模板元素上而不是我们所希望在应用程序中重复我们的元素.
 
+虽然它(proority)不在文档中, 但是你可以搜索Angular资源中少数几个使用`priority`的其他指令. 对于`ng-repeat`, 我们使用优先级值为1000, 这样就有足够的优先级处理优先处理它.
+
+####Templates
+
+当创建组件, 挂件, 控制器一起其他东西时, Angular允许你提供一个模板替换或者包裹元素的内容. 例如, 如果你在视图中创建一组tab选项卡, 可能会呈现出如图6-1所示视图.
+
+![tab](figure/tab.png)
+
+图6-1 tab选项卡视图
+
+并不是一堆\<div\>, \<ul\>\<li\>和\<a\>元素, 你可以创建一个\<tab-set\>和\<tab\>指令, 用来声明每个单独的tab选项卡的结构. 然后你的HTML可以做的更好来表达你的模板意图. 最终结果可能看起来像这样:
+
+	<tab-set>
+		<tab title="Home">
+			<p>Welcome home!</p>
+		</tab>
+		<tab title="Preferences">
+			<!-- preferences UI goes here -->
+		</tab>
+	</tab-set>
+
+你还可以给title绑定一个字符串数据, 通过在\<tab\>或者\<tab-set\>上绑定控制器处理tab选项内容. 它不仅限于用在tabs上--你还可以用于菜单, 手风琴, 弹窗, dialog对话框或者其他任何你希望以这种方式实现的地方.
+
+你可以通过`template`或者`templateUrl`属性来指定替换的DOM元素. 使用`template`通过字符串来设置模板内容, 或者使用`templateUrl`来从服务器的一个文件上来加载模板. 正如你在接下来的例子中会看到, 你可以预先缓存这些模板来减少GET请求, 这有利于提高应用的性能.
+
+让我们来编写一个dumb指令: 一个\<hello\>元素, 只是用于使用\<div\>Hi there\</div\>来替换自身. 在这里, 我们将设置`restrict`来允许元素和设置`template`显示我们所希望的东西. 由于默认的行为只将内容追加到元素中, 因此我们将设置`replace`属性为true来替换原来的模板:
+
+	var appModule = angular.module('app', []);
+	appModule.directive('hello', function(){
+		return {
+			restrict: 'E',
+			template: '<div>Hi there</div>',
+			replace: true
+		};
+	});
+
+在页面中我们可以像这样使用它:
+
+	<html lang="en" ng-app="app">
+	...
+	<body>
+		<hello></hello>
+	</body>
+	...
+
+将它载入到浏览器中, 我们会看到"Hi there".
+
+如果你查看页面的源代码, 在页面上你仍然会看到\<hello\>\</hello\>, 但是如果你查看生成的源代码(在Chrome中, 你可以在"Hi there"上右击然后选择审查元素), 你会看到:
+
+	<body>
+		<div>Hi there</div>
+	</body>
+
+\<hello\>\</hello\>被模板中的\<div\>替换了.
+
+如果你从指令定义中移除`replace: true`, 那么你会看到\<hello\>\<div\>Hi there\</div\>\</hello\>.
+
+通常你会希望使用`templateUrl`而不是`template`, 因为输入HTML字符串并不是那么有趣. `template`属性通常有利于非常小的模板. 使用templateUrl`同样非常有用, 可以设置适当的头来使模板可缓存. 我们可以像下面这样重写我们的`hello`指令:
+
+	var appModule = angular.module('app', []);
+	appModule.directive('hello', function(){
+		return {
+			restrict: 'E',
+			templateUrl: 'helloTemplate.html',
+			replace: true
+		};
+	});
+
+在`helloTemplate.html`中, 你只需要输入:
+
+	<div>Hi there</div>
+
+如果你使用Chrome浏览器, 它的"同源策略"会组织Chrome从`file://`中加载这些模板, 并且你会得到一个类似"Origin null is not allowed by Access-Control-Allow-Origin."的错误. 那么在这里, 你有两个选择:
+
++ 通过服务器来加载应用
++ 在Chrome中设置一个标志. 你可以通过在命令行中使用`chrome --allow-file-access-from-files`命令来运行Chrome做到这一点.
+
+这将会通过`templateUrl`加载这些文件, 然而, 这会让你的用户要等待到指令加载. 如果你希望在首页加载模板, 你可以在一个`script`标签中将它作为这个页面的一部分包含进来, 就像这样:
+
+	<script type="text/ng-template" id="helloTemplateInline.html">
+		<div>Hi there</div>
+	</script>
+
+这里的id属性很重要, 因为这是Angular用来存储模板的URL键. 稍候你将会使用这个id在指令的`templateUrl`中指定要插入的模板.
+
+这个版本能够很好的载入而不需要服务器, 因为没有必要的`XMLHttpRequest`来获取内容.
+
+最后, 你可以越过`$http`或者以其他机制来加载你自己的模板, 然后将它们直接设置在Angular中称为`$templateCache`的对象上. 我们希望在指令运行之前缓存中的这个模板可用, 因此我们将通过module上的run函数来调用它.
+
+	var appModule = angular.module('app', []);
+
+	appModule.run(function($templateCache){
+		$templateCache.put('helloTemplateCached.html', '<div>Hi there</div>');
+	});
+
+	appModule.directive('hello', function(){
+		return {
+			restrict: 'E',
+			templateUrl: 'helloTemplateCached.html',
+			replace: true;
+		};
+	});
+
+你可能希望在产品中这么做, 仅仅作为一个减少所需的GET请求数量的技术. 你可以运行一个脚本将所有的模板合并到一个单独的文件中, 并在一个新的模块中加载它, 然后你就可以从你的主应用程序模块中引用它.
+
+####Transclusion
+
+除了替换或者追加内容, 你还可以通过`transclude`属性将原来的内容移到新模板中. 当设置为true时, 指令将删除原来的内容, 但是在你的模板中通过一个名为`ng-transclude`的指令重新插入来使它可用. 
+
+我们可以使用transclusion来改变我们的示例:
+
+	appModule.directive('hello', function() {
+		return {
+			template: '<div>Hi there <span ng-transclude></span></div>',
+			transclude: true
+		};
+	});
+
+像这样来应用它:
+
+	<div hello>Bob</div>
+
+你会看到: "Hi there Bob."
 

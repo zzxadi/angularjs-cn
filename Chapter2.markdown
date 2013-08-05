@@ -950,9 +950,11 @@ CountController定义如下:
     <body ng-controller="ShoppingController">
         <h1>Shop!</h1>
         <table>
-            <td>{{item.title}}</td>
-            <td>{{item.description}}</td>
-            <td>{{item.price | currency}}</td>
+            <tr ng-repeat="item in items">
+                <td>{{item.title}}</td>
+                <td>{{item.description}}</td>
+                <td>{{item.price | currency}}</td>
+            </tr>
         </table>
     </body>
     

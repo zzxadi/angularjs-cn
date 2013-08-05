@@ -1075,7 +1075,7 @@ Angular自带了几个过滤器, 像我们已经看到的currency:
         </tr>
         <tr ng-repeat="message in messages">
             <td>{{message.sender}}</td>
-            <td><a href='#/view/{{message.id}}'>{{message.subject}}</td>
+            <td><a href='#/view/{{message.id}}'>{{message.subject}}</a></td>
             <td>{{message.date}}</td>
         </tr>
     </table>

@@ -1113,7 +1113,7 @@ Angular自带了几个过滤器, 像我们已经看到的currency:
         // Notice that for the detail view, we specify a parameterized URL component by placing a colon in front of the id
         when('/view/:id', {
             controller: DetailController,
-            templateUrl: 'detai.html'
+            templateUrl: 'detail.html'
         }).
         otherwise({
             redirectTo: '/'

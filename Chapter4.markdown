@@ -40,7 +40,7 @@ Figure 4-1. Guthub: A simple recipe management application
 
 任何类型的业务逻辑和行为都不应该进入模板中; 这些信息应该被限制在控制器中. 保持模板的简单可以适当的分离关注点, 并且可以确保你只使用单元测试的情况下就能够测试大多数的代码. 而模板必须使用场景测试的方式来测试.
 
-但是, 你可能会问, 在哪里操作DOM呢? DOM操作并不会真正进入到控制器和模板中. 它会存在于Angular的指令中(有时候也可以通过服务来处理, 这样可以避免重复的DOM操作代码). 我们会在我们的Github的示例文件中涵盖一个这样的例子.
+但是, 你可能会问, 在哪里操作DOM呢? DOM操作并不会真正进入到控制器和模板中. 它会存在于Angular的指令中(有时候也可以通过服务来处理, 这样可以避免重复的DOM操作代码). 我们会在我们的GutHub的示例文件中涵盖一个这样的例子.
 
 废话少说, 让我们来深入探讨一下它们.
 
@@ -122,7 +122,7 @@ Figure 4-1. Guthub: A simple recipe management application
 
 在这个文件中, 我们实例化了三个AngularJS服务.
 
-有一个菜谱服务, 它返回我们所调用的Angular Resource. 这些是RESETful资源, 它指向一个RESTful服务器. Angular Resource封装了低层的`$http`服务, 因此你可以在你的代码中只处理对象.
+有一个菜谱服务, 它返回我们所调用的Angular Resource. 这些是RESTful资源, 它指向一个RESTful服务器. Angular Resource封装了低层的`$http`服务, 因此你可以在你的代码中只处理对象.
 
 注意单独的那行代码 - `return $resource` - (当然, 依赖于`guthub.services`模型), 现在我们可以将`recipe`作为参数传递给任意的控制器中, 它将会注入到控制器中. 此外, 每个菜谱对象都内置的有以下几个方法:
 
@@ -321,7 +321,7 @@ Figure 4-1. Guthub: A simple recipe management application
 
 那么你希望作用域内的`save`函数做什么. 它保存当前食谱, 并且一旦保存好, 它就在屏幕中将用户重定向到相同的食谱. 回调函数是非常有用的, 一旦你完成任务的情况下执行或者处理一些行为.
 
-有两种方式可以在这里保存食谱. 一种是如代码所示, 通过执行$scope.recipe.$save()方法. 这只是可能, 因为`recipe`十一个通过开头部分的RecipeLoader返回的资源对象.
+有两种方式可以在这里保存食谱. 一种是如代码所示, 通过执行$scope.recipe.$save()方法. 这只是可能, 因为`recipe`是一个通过开头部分的RecipeLoader返回的资源对象.
 
 另外, 你可以像这样来保存食谱:
 

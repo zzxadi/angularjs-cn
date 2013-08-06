@@ -331,3 +331,55 @@ Table 6-3 指令声明用法选项
 
 你会看到: "Hi there Bob."
 
+###编译和链接功能
+
+虽然插入模板是有用的, 任何指令真正有趣的工作发生在它的`compile`和它的`link`函数中.
+
+`compile`和`link`函数被指定为Angular用来创建应用程序实际视图的后两个阶段. 让我们从更高层次来看看Angular的初始化过程, 按一定的顺序:
+
+**Script loads**
+
+Angular加载和查找`ng-app`指令来判定应用程序界限.
+
+**Compile phase(阶段)**
+
+在这个阶段, Angular会遍历DOM节点以确定所有注册在模板中的指令. 对于每一个指令, 然后基于指令的规则(`template`,`replace`,`transclude`等等)转换DOM, 并且如果它存在就调用`compile`函数. 它的返回结果是一个编译过的`template`函数, 这将从所有的指令中调用`link`函数来收集.
+
+**Link phase(阶段)**
+
+创建动态的视图, 然后Angular会对每个指令运行一个`link`函数. `link`函数通常在DOM或者模型上创建监听器. 这些监听器用于视图和模型在所有的时间里都保持同步.
+
+因此我们必须在编译阶段处理模板的转换, 同时在链接阶段处理在视图中修改数据. 按照这个思路, 指令中的`compile`和`link`函数之间主要的区别是`compile`函数处理模板自身的转换, 而`link`函数处理在模型和视图之间创造一个动态的连接. 作用域挂接到编译过的`link`函数正是在这个第二阶段, 并且通过数据绑定将指令变成活动的.
+
+出于性能的考虑, 者两个阶段才分开的. `compile`函数仅在编译阶段执行一次, 而`link`函数会被执行多次, 对每个指令实例. 例如, 让我们来说说你上面使用的`ng-repeat`指令. 你并不想小勇`compile`, 这回导致在每次`ng-repeat`重复时都产生一个DOM遍历的操作. 相反, 你会希望一次编译, 然后链接.
+
+虽然你毫无疑问的应该学习编译和链接之间的不同, 以及每个功能, 你需要编写的大部分的指令都不需要转换模板; 你还会编写大部分的链接函数.
+
+让我们再看看每个语法来比较一下, 我们有:
+
+	compile: function compile(tElement, tAttrs, transclude) {
+		return {
+			pre: function preLink(scope, iElement, iAttrs, controller) {...},
+			post: function postLink(scope, iElement, iAttrs, controller) {...}
+		}
+	}
+
+以及链接:
+
+	link: function postLink(scope, iElement, iAttrs) {...}
+
+注意这里有一点不同的是`link`函数获得了一个作用域的访问, 而`compile`没有. 这是因为在编译阶段期间, 作用域并不存在. 然而你有能力从`compile`函数返回`link`函数. 这些`link`函数能够访问到作用域.
+
+还要注意的是`compile`和`link`都会获得一个到它们对应的DOM袁术和这些元素属性[attributes]列表的引用. 这里的一点区别是`compile`函数是从模板中获得模板元素和属性, 并且会获取到`t`前缀. 而`link`函数使用模板创建的视图实例中获得它们的, 它们会获取到`i`前缀.
+
+这种区别只存在于当指令位于其他指令中制造模板副本的时候. `ng-repeat`就是一个很好的例子.
+
+	<div ng-repeat="thing in things">
+		<my-widget config="thing"></my-widget>
+	</div>
+
+这里, `compile`函数将只被调用一次, 而`link`函数在每次复制`my-widget`时都会被调用一次--等价于元素在things中的数量. 因此, 如果`my-widget`需要到所有`my-widget`副本(实例)中修改一些公共的东西, 为了提升效率, 正确的做法是在`compile`函数中处理. 
+
+你可能还会注意到`compile`函数好哦的了一个`transclude`属性函数. 这里, 你还有机会以编写一个函数以编程的方式transcludes内容, 对于简单的的基于模板不足以transclusion的情况.
+
+最后, `compile`可以返回一个`preLink`和`postLink`函数, 而`link`仅仅指向一个`posyLink`函数. `preLink`, 正如它的名字所暗示的, 它运行在编译阶段之后, 但是会在指令链接到子元素之前. 同样的, `postLink`会运行在所有的子元素指令被链接之后. 这意味着如果你需要改变DOM结构, 你将在`posyLink`中处理. 在`preLink`中处理将会混淆流程并导致一个错误.

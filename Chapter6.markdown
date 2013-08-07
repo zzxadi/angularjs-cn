@@ -207,7 +207,7 @@ Table 6-3 指令声明用法选项
 
 很难发生需要设置优先级的情况. 一个需要设置优先级例子是`ng-repeat`指令. 当重复元素时, 我们希望Angular在应用指令之前床在一个模板元素的副本. 如果不这么做, 其他的指令将会应用到标准的模板元素上而不是我们所希望在应用程序中重复我们的元素.
 
-虽然它(proority)不在文档中, 但是你可以搜索Angular资源中少数几个使用`priority`的其他指令. 对于`ng-repeat`, 我们使用优先级值为1000, 这样就有足够的优先级处理优先处理它.
+虽然它(prority)不在文档中, 但是你可以搜索Angular资源中少数几个使用`priority`的其他指令. 对于`ng-repeat`, 我们使用优先级值为1000, 这样就有足够的优先级处理优先处理它.
 
 ####Templates
 
@@ -264,7 +264,7 @@ Table 6-3 指令声明用法选项
 
 如果你从指令定义中移除`replace: true`, 那么你会看到\<hello\>\<div\>Hi there\</div\>\</hello\>.
 
-通常你会希望使用`templateUrl`而不是`template`, 因为输入HTML字符串并不是那么有趣. `template`属性通常有利于非常小的模板. 使用templateUrl`同样非常有用, 可以设置适当的头来使模板可缓存. 我们可以像下面这样重写我们的`hello`指令:
+通常你会希望使用`templateUrl`而不是`template`, 因为输入HTML字符串并不是那么有趣. `template`属性通常有利于非常小的模板. 使用`templateUrl`同样非常有用, 可以设置适当的头来使模板可缓存. 我们可以像下面这样重写我们的`hello`指令:
 
 	var appModule = angular.module('app', []);
 	appModule.directive('hello', function(){
